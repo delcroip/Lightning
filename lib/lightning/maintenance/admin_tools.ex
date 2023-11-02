@@ -1,5 +1,4 @@
 defmodule Lightning.AdminTools do
-  
   def generate_iso_weeks(start_date, end_date) do
     Date.range(start_date, end_date)
     |> Enum.with_index()

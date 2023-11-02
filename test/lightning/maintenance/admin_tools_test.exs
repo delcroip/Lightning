@@ -10,11 +10,12 @@ defmodule Lightning.AdminToolstest do
         {"2023", "41", "2023-10-09", "2023-10-16"},
         {"2023", "42", "2023-10-16", "2023-10-23"},
         {"2023", "43", "2023-10-23", "2023-10-30"},
-        {"2023", "44", "2023-10-30", "2023-11-06"},
+        {"2023", "44", "2023-10-30", "2023-11-06"}
       ]
+
       weeks = AdminTools.generate_iso_weeks(~D[2023-10-02], ~D[2023-10-30])
 
-      assert  weeks == expected_weeks
+      assert weeks == expected_weeks
     end
   end
 end
