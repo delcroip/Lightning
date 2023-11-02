@@ -8,8 +8,40 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
     """)
 
     execute("""
-    ALTER TABLE work_orders
+    ALTER TABLE work_orders_monolith
     RENAME CONSTRAINT work_orders_pkey TO work_orders_monolith_pkey
+    """)
+
+    execute("""
+    ALTER INDEX work_orders_reason_id_index RENAME TO work_orders_monolith_reason_id_index
+    """)
+
+    execute("""
+    ALTER INDEX work_orders_state_index RENAME TO work_orders_monolith_state_index
+    """)
+
+    execute("""
+    ALTER INDEX work_orders_workflow_id_index RENAME TO work_orders_monolith_workflow_id_index
+    """)
+
+    execute("""
+    ALTER TABLE work_orders_monolith
+    RENAME CONSTRAINT work_orders_dataclip_id_fkey TO work_orders_monolith_dataclip_id_fkey
+    """)
+
+    execute("""
+    ALTER TABLE work_orders_monolith
+    RENAME CONSTRAINT work_orders_reason_id_fkey TO work_orders_monolith_reason_id_fkey
+    """)
+
+    execute("""
+    ALTER TABLE work_orders_monolith
+    RENAME CONSTRAINT work_orders_trigger_id_fkey TO work_orders_monolith_trigger_id_fkey
+    """)
+
+    execute("""
+    ALTER TABLE work_orders_monolith
+    RENAME CONSTRAINT work_orders_workflow_id_fkey TO work_orders_monolith_workflow_id_fkey
     """)
 
     execute("""
@@ -22,18 +54,80 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
     trigger_id uuid,
     dataclip_id uuid,
     state character varying(255) DEFAULT 'pending'::character varying NOT NULL,
-    last_activity timestamp without time zone
-    CONSTRAINT work_orders_pkey PRIMARY_KEY(id, inserted_at)
-    ) PARTITION BY RANGE (inserted_at);
+    last_activity timestamp without time zone,
+    CONSTRAINT work_orders_pkey PRIMARY KEY (id, inserted_at)
+    ) PARTITION BY RANGE (inserted_at)
+    """)
+
+    Lightning.AdminTools.generate_iso_weeks(~D[2023-01-02], ~D[2024-01-29])
+    |> Enum.each(fn {year, wnum, from, to} ->
+      execute("""
+      CREATE TABLE work_orders_#{year}_#{wnum}
+        PARTITION OF work_orders
+          FOR VALUES FROM ('#{from}') TO ('#{to}')
+      """)
+    end)
+
+    execute("""
+    INSERT INTO work_orders
+    SELECT *
+    FROM work_orders_monolith
     """)
 
     execute("""
+      CREATE INDEX work_orders_reason_id_index ON public.work_orders USING btree (reason_id)
+    """)
+
+    execute("""
+      CREATE INDEX work_orders_state_index ON public.work_orders USING btree (state);
+    """)
+
+    execute("""
+      CREATE INDEX work_orders_workflow_id_index ON public.work_orders USING btree (workflow_id)
+    """)
+
+    execute("""
+      ALTER TABLE public.work_orders
+      ADD CONSTRAINT work_orders_dataclip_id_fkey
+      FOREIGN KEY (dataclip_id)
+      REFERENCES public.dataclips(id)
+      ON DELETE SET NULL
+    """)
+
+    execute("""
+      ALTER TABLE public.work_orders
+      ADD CONSTRAINT work_orders_reason_id_fkey
+      FOREIGN KEY (reason_id)
+      REFERENCES public.invocation_reasons(id)
+    """)
+
+    execute("""
+      ALTER TABLE public.work_orders
+      ADD CONSTRAINT work_orders_trigger_id_fkey
+      FOREIGN KEY (trigger_id)
+      REFERENCES public.triggers(id)
+      ON DELETE SET NULL;
+    """)
+
+    execute("""
+      ALTER TABLE public.work_orders
+      ADD CONSTRAINT work_orders_workflow_id_fkey
+      FOREIGN KEY (workflow_id)
+      REFERENCES public.workflows(id)
+      ON DELETE CASCADE;
     """)
   end
 
   def down do
+    Lightning.AdminTools.generate_iso_weeks(~D[2023-01-02], ~D[2024-01-29])
+    |> Enum.each(fn {year, wnum, _from, _to} ->
+      execute("""
+      DROP TABLE work_orders_#{year}_#{wnum}
+      """)
+    end)
+
     execute("""
-      DROP TABLE IF EXISTS public.work_orders
+    DROP TABLE IF EXISTS public.work_orders
     """)
 
     execute("""
@@ -44,6 +138,38 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
     execute("""
     ALTER TABLE work_orders
     RENAME CONSTRAINT work_orders_monolith_pkey TO work_orders_pkey
+    """)
+
+    execute("""
+    ALTER INDEX work_orders_monolith_reason_id_index RENAME TO work_orders_reason_id_index
+    """)
+
+    execute("""
+    ALTER INDEX work_orders_monolith_state_index RENAME TO work_orders_state_index
+    """)
+
+    execute("""
+    ALTER INDEX work_orders_monolith_workflow_id_index RENAME TO work_orders_workflow_id_index
+    """)
+
+    execute("""
+    ALTER TABLE work_orders
+    RENAME CONSTRAINT work_orders_monolith_dataclip_id_fkey TO work_orders_dataclip_id_fkey
+    """)
+
+    execute("""
+    ALTER TABLE work_orders
+    RENAME CONSTRAINT work_orders_monolith_reason_id_fkey TO work_orders_reason_id_fkey
+    """)
+
+    execute("""
+    ALTER TABLE work_orders
+    RENAME CONSTRAINT work_orders_monolith_trigger_id_fkey TO work_orders_trigger_id_fkey
+    """)
+
+    execute("""
+    ALTER TABLE work_orders
+    RENAME CONSTRAINT work_orders_monolith_workflow_id_fkey TO work_orders_workflow_id_fkey
     """)
   end
 end
