@@ -122,6 +122,9 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
     Lightning.AdminTools.generate_iso_weeks(~D[2023-01-02], ~D[2024-01-29])
     |> Enum.each(fn {year, wnum, _from, _to} ->
       execute("""
+      ALTER TABLE work_orders DETACH PARTITION work_orders_#{year}_#{wnum}
+      """)
+      execute("""
       DROP TABLE work_orders_#{year}_#{wnum}
       """)
     end)
