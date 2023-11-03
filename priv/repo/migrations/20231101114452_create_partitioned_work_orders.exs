@@ -69,6 +69,12 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
     end)
 
     execute("""
+    CREATE TABLE work_orders_default
+    PARTITION OF work_orders
+    DEFAULT
+    """)
+
+    execute("""
     INSERT INTO work_orders
     SELECT *
     FROM work_orders_monolith
@@ -128,6 +134,13 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
       DROP TABLE work_orders_#{year}_#{wnum}
       """)
     end)
+
+    execute("""
+    ALTER TABLE work_orders DETACH PARTITION work_orders_default
+    """)
+    execute("""
+    DROP TABLE work_orders_default
+    """)
 
     execute("""
     DROP TABLE IF EXISTS public.work_orders
