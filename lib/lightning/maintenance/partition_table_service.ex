@@ -22,7 +22,9 @@ defmodule Lightning.PartitionTableService do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"drop_older_than" => shift_options}})
       when is_list(shift_options) do
-    shift_options = for {key, val} <- shift_options, into: [], do: {String.to_atom(key), val}
+    shift_options =
+      for {key, val} <- shift_options, into: [], do: {String.to_atom(key), val}
+
     upper_bound = Timex.shift(DateTime.utc_now(), shift_options)
 
     remove_empty("work_orders", upper_bound)

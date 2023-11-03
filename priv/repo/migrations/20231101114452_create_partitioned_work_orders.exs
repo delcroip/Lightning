@@ -130,6 +130,7 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
       execute("""
       ALTER TABLE work_orders DETACH PARTITION work_orders_#{year}_#{wnum}
       """)
+
       execute("""
       DROP TABLE work_orders_#{year}_#{wnum}
       """)
@@ -138,6 +139,7 @@ defmodule Lightning.Repo.Migrations.CreatePartitionedWorkOrders do
     execute("""
     ALTER TABLE work_orders DETACH PARTITION work_orders_default
     """)
+
     execute("""
     DROP TABLE work_orders_default
     """)

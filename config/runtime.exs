@@ -97,7 +97,7 @@ base_oban_cron = [
   {"0 1 * * *", Lightning.PartitionTableService,
    args: %{"add_headroom" => [weeks: 2]}},
   {"0 0 * * *", Lightning.PartitionTableService,
-   args: %{"drop_older_than" => [weeks: -6]}},
+   args: %{"drop_older_than" => [weeks: -6]}}
 ]
 
 conditional_cron =
