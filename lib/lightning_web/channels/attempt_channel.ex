@@ -64,17 +64,27 @@ defmodule LightningWeb.AttemptChannel do
   end
 
   def handle_in("attempt:complete", payload, socket) do
-    %{
-      "reason" => reason,
-      "error_type" => error_type,
-      "error_message" => error_message
-    } =
+    params =
       payload
+      |> Map.get_and_update("reason", fn _ -> :pop end)
+      |> then(fn {reason, payload} ->
+        payload
+        |> Map.put(
+          "state",
+          case reason do
+            "ok" -> :success
+            "fail" -> :failed
+            "crash" -> :crashed
+            "cancel" -> :cancelled
+            "kill" -> :killed
+            "exception" -> :exception
+            unknown -> unknown
+          end
+        )
+      end)
 
     socket.assigns.attempt
-    |> Attempts.complete_attempt(
-      {map_rtm_reason_state(reason), error_type, error_message}
-    )
+    |> Attempts.complete_attempt(params)
     |> case do
       {:ok, attempt} ->
         # TODO: Turn FailureAlerter into an Oban worker and process async
@@ -197,17 +207,5 @@ defmodule LightningWeb.AttemptChannel do
     Attempts.get(id,
       include: [workflow: [:triggers, :edges, jobs: [:credential]]]
     )
-  end
-
-  defp map_rtm_reason_state(reason) do
-    case reason do
-      "ok" -> :success
-      "fail" -> :failed
-      "crash" -> :crashed
-      "cancel" -> :cancelled
-      "kill" -> :killed
-      "exception" -> :exception
-      unknown -> unknown
-    end
   end
 end
