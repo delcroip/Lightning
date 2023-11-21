@@ -128,6 +128,8 @@ bearing with us as we move towards our first stable Lightning release.)
   confirmation [#1105](https://github.com/OpenFn/Lightning/issues/1105)
 - Move "Enabled" property from "Jobs" to "Edges"
   [#895](https://github.com/OpenFn/Lightning/issues/895)
+- Update UI for managing project users
+  [#1145](https://github.com/OpenFn/Lightning/issues/1145)
 
 ### Fixed
 
