@@ -258,6 +258,24 @@ defmodule Lightning.Attempts do
     |> Repo.stream()
   end
 
+  def delete_attempts(attempts) do
+    attempt_ids = attempts |> Enum.map(& &1.id)
+    Ecto.Multi.new()
+    |> Ecto.Multi.delete_all(
+      :attempts,
+      (from a in Attempt, where: a.id in ^attempt_ids)
+    )
+    |> Ecto.Multi.delete_all(
+      :attempt_runs,
+      (from ar in AttemptRun, where: ar.attempt_id in ^attempt_ids)
+    )
+    |> Ecto.Multi.delete_all(
+      :log_lines,
+      Ecto.assoc(attempts, :log_lines)
+    )
+    |> Repo.transaction()
+  end
+
   def delete(%Attempt{} = attempt) do
     result =
       Ecto.Multi.new()
