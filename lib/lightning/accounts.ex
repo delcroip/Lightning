@@ -551,7 +551,11 @@ defmodule Lightning.Accounts do
 
   """
   def delete_user(%User{} = user) do
-    Repo.delete(user)
+    Repo.transact(fn -> 
+      Attempts.delete_for_user(user)
+
+      Repo.delete(user)
+    end)
   end
 
   @doc """

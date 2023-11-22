@@ -20,7 +20,9 @@ defmodule Lightning.Attempts do
 
   require Logger
 
+  alias Lightning.Accounts.User
   alias Lightning.Attempt
+  alias Lightning.AttemptRun
   alias Lightning.Attempts.Events
   alias Lightning.Attempts.Handlers
 
@@ -254,6 +256,41 @@ defmodule Lightning.Attempts do
     Ecto.assoc(attempt, :log_lines)
     |> order_by([l], asc: l.timestamp)
     |> Repo.stream()
+  end
+
+  def delete(%Attempt{} = attempt) do
+    result =
+      Ecto.Multi.new()
+      |> Ecto.Multi.delete(:attempt, attempt)
+      |> Ecto.Multi.delete_all(:attempt_runs, attempt_runs_to_be_deleted(attempt))
+      |> Ecto.Multi.delete_all(:log_lines, Ecto.assoc(attempt, :log_lines))
+      |> Repo.transaction()
+
+    case result do
+      {:ok, %{attempt: modified_attempt}} -> {:ok, modified_attempt}
+      {:error, :attempt, changeset} -> {:error, changeset} # Not tested
+    end
+  end
+
+  def delete_for_user(%User{} = user) do
+    attempts =
+      (from a in Attempt, where: a.created_by_id == ^user.id) |> Repo.all()
+
+    deleted_attempts = Repo.transaction(fn ->
+      attempts
+      |> Enum.map(fn attempt ->
+        case delete(attempt) do
+          {:ok, deleted_attempt} -> deleted_attempt
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    end)
+
+    {:ok, deleted_attempts}
+  end
+
+  defp attempt_runs_to_be_deleted(attempt) do
+    from ar in AttemptRun, where: ar.attempt_id == ^attempt.id
   end
 
   defp adaptor do
