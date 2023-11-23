@@ -601,6 +601,22 @@ defmodule Lightning.AttemptsTest do
       assert id == attempt_1.id
     end
 
+    test "rolls back changes on failure" do
+      attempt = insert_attempt()
+      attempt_run = insert_attempt_run(attempt)
+      log_line = insert(:log_line, attempt: attempt)
+
+      Repo.delete(attempt)
+
+      assert_raise Ecto.StaleEntryError, ~r/stale struct/, fn -> 
+        Attempts.delete(attempt)
+      end
+
+      assert only_record_for_type?(attempt_run)
+
+      assert only_record_for_type?(log_line)
+    end
+
     defp insert_attempt(log_lines \\ []) do
       insert(:attempt,
         created_by: build(:user),

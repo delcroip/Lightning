@@ -299,7 +299,7 @@ defmodule Lightning.Attempts do
       :attempts,
       (from a in Attempt, where: a.id in ^attempt_ids)
     )
-    |> Repo.transaction()
+    |> Repo.transaction() # Not tested
 
     case result do
       {:ok, %{attempts: deleted_attempts}} -> {:ok, deleted_attempts}
