@@ -1293,6 +1293,24 @@ defmodule Lightning.AccountsTest do
       assert only_record_for_type?(log_line_3_1)
     end
 
+    test "rolls back any changes on failure" do
+      user = user_fixture()
+
+      attempt = insert_attempt(user)
+
+      broken_user =
+        user
+        |> Map.merge(
+          %{__meta__: %Ecto.Schema.Metadata{state: :deleted}}
+        )
+
+      assert_raise Postgrex.Error, ~r/.+/, fn ->
+        Accounts.delete_user(broken_user)
+      end
+
+      assert only_record_for_type?(attempt)
+    end
+
     defp insert_attempt(user, log_lines \\ []) do
       insert(:attempt,
         created_by: user,

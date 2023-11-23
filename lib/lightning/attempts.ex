@@ -258,13 +258,35 @@ defmodule Lightning.Attempts do
     |> Repo.stream()
   end
 
-  def delete_attempts(attempts) do
+  def delete(%Attempt{} = attempt) do
+    result =
+      Ecto.Multi.new()
+      |> Ecto.Multi.delete_all(:attempt_runs, attempt_runs_to_be_deleted(attempt))
+      |> Ecto.Multi.delete_all(:log_lines, Ecto.assoc(attempt, :log_lines))
+      |> Ecto.Multi.delete(:attempt, attempt)
+      |> Repo.transaction()
+
+    case result do
+      {:ok, %{attempt: modified_attempt}} -> {:ok, modified_attempt}
+      {:error, _, changeset} -> {:error, changeset} # Not tested
+    end
+  end
+
+  def delete_for_user(%User{} = user) do
+    attempts =
+      (from a in Attempt, where: a.created_by_id == ^user.id) |> Repo.all()
+
+    delete_attempts(attempts)
+  end
+
+  defp delete_attempts(attempts) when length(attempts) == 0 do
+    {:ok, {0, nil}}
+  end
+
+  defp delete_attempts(attempts) when length(attempts) > 0 do
     attempt_ids = attempts |> Enum.map(& &1.id)
-    Ecto.Multi.new()
-    |> Ecto.Multi.delete_all(
-      :attempts,
-      (from a in Attempt, where: a.id in ^attempt_ids)
-    )
+
+    result = Ecto.Multi.new()
     |> Ecto.Multi.delete_all(
       :attempt_runs,
       (from ar in AttemptRun, where: ar.attempt_id in ^attempt_ids)
@@ -273,38 +295,16 @@ defmodule Lightning.Attempts do
       :log_lines,
       Ecto.assoc(attempts, :log_lines)
     )
+    |> Ecto.Multi.delete_all(
+      :attempts,
+      (from a in Attempt, where: a.id in ^attempt_ids)
+    )
     |> Repo.transaction()
-  end
-
-  def delete(%Attempt{} = attempt) do
-    result =
-      Ecto.Multi.new()
-      |> Ecto.Multi.delete(:attempt, attempt)
-      |> Ecto.Multi.delete_all(:attempt_runs, attempt_runs_to_be_deleted(attempt))
-      |> Ecto.Multi.delete_all(:log_lines, Ecto.assoc(attempt, :log_lines))
-      |> Repo.transaction()
 
     case result do
-      {:ok, %{attempt: modified_attempt}} -> {:ok, modified_attempt}
-      {:error, :attempt, changeset} -> {:error, changeset} # Not tested
+      {:ok, %{attempts: deleted_attempts}} -> {:ok, deleted_attempts}
+      {:error, _, changeset} -> {:error, changeset} # Not tested
     end
-  end
-
-  def delete_for_user(%User{} = user) do
-    attempts =
-      (from a in Attempt, where: a.created_by_id == ^user.id) |> Repo.all()
-
-    deleted_attempts = Repo.transaction(fn ->
-      attempts
-      |> Enum.map(fn attempt ->
-        case delete(attempt) do
-          {:ok, deleted_attempt} -> deleted_attempt
-          {:error, changeset} -> Repo.rollback(changeset)
-        end
-      end)
-    end)
-
-    {:ok, deleted_attempts}
   end
 
   defp attempt_runs_to_be_deleted(attempt) do

@@ -600,6 +600,16 @@ defmodule Lightning.AttemptsTest do
 
       assert id == attempt_1.id
     end
+
+    defp insert_attempt(log_lines \\ []) do
+      insert(:attempt,
+        created_by: build(:user),
+        work_order: build(:workorder),
+        dataclip: build(:dataclip),
+        starting_job: build(:job),
+        log_lines: log_lines
+      )
+    end
   end
 
   describe "delete_for_user" do
@@ -638,6 +648,27 @@ defmodule Lightning.AttemptsTest do
       assert only_record_for_type?(log_line_3_1)
     end
 
+    test "indicates a successful deletion" do
+      user_1 = user_fixture()
+      user_2 = user_fixture()
+
+      insert_attempt_for_user(user_1)
+      insert_attempt_for_user(user_1)
+      insert_attempt_for_user(user_2)
+
+      {:ok, {num_deletions, _}} = Attempts.delete_for_user(user_1)
+
+      assert num_deletions == 2
+    end
+
+    test "behaves correctly if there are no attempts for the user" do
+      user_1 = user_fixture()
+
+      {:ok, {num_deletions, _}} = Attempts.delete_for_user(user_1)
+
+      assert num_deletions == 0
+    end
+
     defp insert_attempt_for_user(user, log_lines \\ []) do
       insert(:attempt,
         created_by: user,
@@ -647,50 +678,6 @@ defmodule Lightning.AttemptsTest do
         log_lines: log_lines
       )
     end
-  end
-
-  describe "delete_attempts" do
-    test "removes any Attempt and associated AttemptRun records" do
-      attempt_1 = insert_attempt()
-      attempt_2 = insert_attempt()
-      attempt_3 = insert_attempt()
-
-      _attempt_run_1_1 = insert_attempt_run(attempt_1)
-      _attempt_run_1_2 = insert_attempt_run(attempt_1)
-      _attempt_run_2_1 = insert_attempt_run(attempt_2)
-      attempt_run_3_1 = insert_attempt_run(attempt_3)
-
-      Attempts.delete_attempts([attempt_1, attempt_2])
-
-      assert only_record_for_type?(attempt_3)
-
-      assert only_record_for_type?(attempt_run_3_1)
-    end
-
-    test "removes any associated LogLine records" do
-      user_1 = user_fixture()
-      user_2 = user_fixture()
-
-      attempt_1 = insert_attempt(build_list(2, :log_line))
-      attempt_2 = insert_attempt(build_list(2, :log_line))
-
-      attempt_3 = insert_attempt()
-      log_line_3_1 = insert(:log_line, attempt: attempt_3)
-
-      Attempts.delete_attempts([attempt_1, attempt_2])
-
-      assert only_record_for_type?(log_line_3_1)
-    end
-  end
-
-  defp insert_attempt(log_lines \\ []) do
-    insert(:attempt,
-      created_by: build(:user),
-      work_order: build(:workorder),
-      dataclip: build(:dataclip),
-      starting_job: build(:job),
-      log_lines: log_lines
-    )
   end
 
   defp insert_attempt_run(attempt) do

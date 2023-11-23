@@ -16,11 +16,11 @@ defmodule Lightning.Attempts.QueueTest do
 
     test "indicates if the operation was successful" do
       attempt_1 = insert_attempt()
-      attempt_2 = insert_attempt()
+      _attempt_2 = insert_attempt()
 
       {:ok, %Lightning.Attempt{id: id}} = Queue.dequeue(attempt_1)
 
-      assert  id == attempt_1.id
+      assert id == attempt_1.id
     end
 
     defp insert_attempt do
@@ -28,7 +28,7 @@ defmodule Lightning.Attempts.QueueTest do
         created_by: build(:user),
         work_order: build(:workorder),
         dataclip: build(:dataclip),
-        starting_job: build(:job),
+        starting_job: build(:job)
       )
     end
   end
