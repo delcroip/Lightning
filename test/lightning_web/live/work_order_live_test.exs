@@ -1904,11 +1904,11 @@ defmodule LightningWeb.RunWorkOrderTest do
       render_async(view)
 
       refute html =~
-               "Find all runs that include this step, and rerun from there"
+               "Find all runs that include this step and rerun from there"
 
       assert render_change(view, "toggle_all_selections", %{
                all_selections: true
-             }) =~ "Find all runs that include this step, and rerun from there"
+             }) =~ "Find all runs that include this step and rerun from there"
 
       view
       |> form("#select-job-for-rerun-form")
@@ -1936,7 +1936,8 @@ defmodule LightningWeb.RunWorkOrderTest do
 
       {:ok, _view, html} = follow_redirect(result, conn)
 
-      assert html =~ "New attempt enqueued for 1 workorder"
+      # this is zero because the previous retried attempt has no run
+      assert html =~ "New attempt enqueued for 0 workorder"
     end
 
     test "jobs on the modal are updated every time the selected workflow is changed",
