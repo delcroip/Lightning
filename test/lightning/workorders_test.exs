@@ -301,7 +301,7 @@ defmodule Lightning.WorkOrdersTest do
       }
     end
 
-    test "retrying one WorkOrder with a single attempt without runs from start job",
+    test "retrying one WorkOrder with a single attempt without runs from start job skips the retry",
          %{
            workflow: workflow,
            trigger: trigger,
@@ -330,26 +330,12 @@ defmodule Lightning.WorkOrdersTest do
                starting_job_id: job_a.id
              )
 
-      {:ok, 1} = WorkOrders.retry_many([workorder], job_a.id, created_by: user)
+      {:ok, 0} = WorkOrders.retry_many([workorder], job_a.id, created_by: user)
 
-      retry_attempt =
-        Repo.get_by(Lightning.Attempt,
-          work_order_id: workorder.id,
-          starting_job_id: job_a.id
-        )
-
-      [old_attempt] = workorder.attempts
-
-      refute retry_attempt.id == old_attempt.id
-      assert retry_attempt.dataclip_id == old_attempt.dataclip_id
-      assert retry_attempt.starting_trigger_id |> is_nil()
-      assert retry_attempt.starting_job_id == job_a.id
-      assert retry_attempt.created_by_id == user.id
-      assert retry_attempt.work_order_id == old_attempt.work_order_id
-      assert retry_attempt.state == :available
-
-      assert retry_attempt |> Repo.preload(:runs) |> Map.get(:runs) == [],
-             "retrying an attempt from the start should not copy over runs"
+      refute Repo.get_by(Lightning.Attempt,
+               work_order_id: workorder.id,
+               starting_job_id: job_a.id
+             )
     end
 
     test "retrying one WorkOrder with a single attempt from start job", %{
@@ -575,7 +561,7 @@ defmodule Lightning.WorkOrdersTest do
              "retrying an attempt from the start should not copy over runs"
     end
 
-    test "retrying one WorkOrder with a multiple attempts whose latest attempt has no runs from start job",
+    test "retrying one WorkOrder with a multiple attempts whose latest attempt has no runs from start job skips the retry",
          %{
            workflow: workflow,
            trigger: trigger,
@@ -627,25 +613,14 @@ defmodule Lightning.WorkOrdersTest do
         assert attempt.id in [attempt_1.id, attempt_2.id]
       end
 
-      {:ok, 1} = WorkOrders.retry_many([workorder], job_a.id, created_by: user)
+      {:ok, 0} = WorkOrders.retry_many([workorder], job_a.id, created_by: user)
 
       attempts = Ecto.assoc(workorder, :attempts) |> Repo.all()
 
-      [retry_attempt] =
-        Enum.reject(attempts, fn attempt ->
-          attempt.id in [attempt_1.id, attempt_2.id]
-        end)
-
-      refute attempt_1.dataclip_id == attempt_2.dataclip_id
-      assert retry_attempt.dataclip_id == attempt_2.dataclip_id
-      assert retry_attempt.starting_trigger_id |> is_nil()
-      assert retry_attempt.starting_job_id == attempt_2.starting_job_id
-      assert retry_attempt.created_by_id == user.id
-      assert retry_attempt.work_order_id == workorder.id
-      assert retry_attempt.state == :available
-
-      assert retry_attempt |> Repo.preload(:runs) |> Map.get(:runs) == [],
-             "retrying an attempt from the start should not copy over runs"
+      assert [] ==
+               Enum.reject(attempts, fn attempt ->
+                 attempt.id in [attempt_1.id, attempt_2.id]
+               end)
     end
 
     test "retrying one WorkOrder with a multiple attempts from mid way job", %{

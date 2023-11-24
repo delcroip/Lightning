@@ -1218,6 +1218,12 @@ defmodule LightningWeb.RunWorkOrderTest do
       trigger = insert(:trigger, type: :webhook, workflow: workflow)
       job_a = insert(:job, workflow: workflow)
 
+      insert(:edge,
+        workflow: workflow,
+        source_trigger: trigger,
+        target_job: job_a
+      )
+
       dataclip = insert(:dataclip)
 
       work_order =
@@ -1412,6 +1418,7 @@ defmodule LightningWeb.RunWorkOrderTest do
       render_change(view, "toggle_all_selections", %{all_selections: true})
       result = render_click(view, "bulk-rerun", %{type: "all"})
       {:ok, view, html} = follow_redirect(result, conn)
+      render_async(view)
 
       assert html =~ "New attempts enqueued for 5 workorders"
 
@@ -1913,6 +1920,8 @@ defmodule LightningWeb.RunWorkOrderTest do
 
       assert html =~
                "New attempts enqueued for 2 workorders"
+
+      render_async(view)
 
       view
       |> form("#selection-form-#{work_order_1.id}")
