@@ -12,6 +12,8 @@ and this project adheres to
 
 - Async loading on the history page to improve UX on long DB queries
   [#1279](https://github.com/OpenFn/Lightning/issues/1279)
+- Audit trail events for webhook auth (deletion method) change
+  [#1165](https://github.com/OpenFn/Lightning/issues/1165)
 
 ### Changed
 
