@@ -26,6 +26,8 @@ and this project adheres to
 
 - Create new workflow button sizing regression
   [#1405](https://github.com/OpenFn/Lightning/issues/1405)
+- Fix for adding ellipses on credential info on job editor heading
+  [#1428](https://github.com/OpenFn/Lightning/issues/1428)
 
 ## [v0.10.2] - 2023-11-21
 
