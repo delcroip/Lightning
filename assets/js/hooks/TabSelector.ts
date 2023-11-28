@@ -8,7 +8,8 @@ type TabSelector = PhoenixHook<{
   inactiveClasses: string[];
   _onHashChange(e: Event): void;
   hashChanged(hash: string): void;
-  setInitialState(hash: string): void;
+  getHash(): string;
+  applyStyles(activeTab: HTMLElement | null, inactiveTabs: HTMLElement[]): void;
 }>;
 
 export default {
@@ -39,9 +40,14 @@ export default {
 
     window.addEventListener('hashchange', this._onHashChange);
 
-    this.setInitialState(this.defaultHash);
+    console.log({ getHash: this.getHash(), defaultHash: this.defaultHash });
+
+    this.hashChanged(this.getHash() || this.defaultHash);
   },
-  hashChanged(newHash: string) {
+  hashChanged(nextHash: string) {
+    let activePanel: HTMLElement | null = null;
+    let inactivePanels: HTMLElement[] = [];
+
     this.tabItems.forEach(elem => {
       const { hash } = elem.dataset;
       const panel = document.querySelector(
@@ -53,41 +59,35 @@ export default {
           `TabSelector tab_bar component missing data-panel-hash=${hash}`
         );
       } else {
-        if (newHash == hash) {
-          elem.classList.remove(...this.inactiveClasses);
-          elem.classList.add(...this.activeClasses);
+        if (nextHash == hash) {
+          if (panel.style.display == 'none') {
+            panel.style.display = 'block';
+          }
+
+          activePanel = elem;
         } else {
-          elem.classList.remove(...this.activeClasses);
-          elem.classList.add(...this.inactiveClasses);
+          inactivePanels.push(elem);
         }
       }
     });
-  },
-  setInitialState(hash: string) {
-    this.tabItems.forEach(elem => {
-      const { hash } = elem.dataset;
-      const panel = document.querySelector(
-        `[data-panel-hash=${hash}]`
-      ) as HTMLElement;
 
-      if (!panel) {
-        console.error(
-          `TabSelector tab_bar component missing data-panel-hash=${hash}`
-        );
-      } else {
-        if (this.defaultHash == hash) {
-          panel.style.display = 'block';
-
-          elem.classList.add(...this.activeClasses);
-        } else {
-          panel.style.display = 'none';
-
-          elem.classList.add(...this.inactiveClasses);
-        }
-      }
-    });
+    this.applyStyles(activePanel, inactivePanels);
   },
   destroyed() {
     window.removeEventListener('hashchange', this._onHashChange);
+  },
+  getHash() {
+    return window.location.hash.replace('#', '');
+  },
+  applyStyles(activeTab: HTMLElement | null, inactiveTabs: HTMLElement[]) {
+    inactiveTabs.forEach(elem => {
+      elem.classList.remove(...this.activeClasses);
+      elem.classList.add(...this.inactiveClasses);
+    });
+
+    if (activeTab) {
+      activeTab.classList.remove(...this.inactiveClasses);
+      activeTab.classList.add(...this.activeClasses);
+    }
   },
 } as TabSelector;
