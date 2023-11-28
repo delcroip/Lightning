@@ -166,6 +166,11 @@ bearing with us as we move towards our first stable Lightning release.)
   [#1327](https://github.com/OpenFn/Lightning/issues/1327)
 - Have user create workflow name before moving to the canvas
   [#1103](https://github.com/OpenFn/Lightning/issues/1103)
+- Remove two obsolete methods related to Run: `Lightning.Invocation.delete_run`
+  and `Lightning.Invocation.Run.new_from`.
+  [#1254](https://github.com/OpenFn/Lightning/issues/1254)
+- Remove obsolete field `previous_id` from `runs` table.
+  [#1254](https://github.com/OpenFn/Lightning/issues/1254)
 
 ### Changed
 
