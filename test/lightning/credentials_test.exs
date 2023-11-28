@@ -86,11 +86,22 @@ defmodule Lightning.CredentialsTest do
       assert credential.body == %{}
       assert credential.name == "some name"
 
-      assert from(a in Audit.base_query(),
-               where: a.item_id == ^credential.id and a.event == "created"
-             )
-             |> Repo.one!(),
+      assert audit_event =
+               from(a in Audit.base_query(),
+                 where: a.item_id == ^credential.id and a.event == "created"
+               )
+               |> Repo.one!(),
              "Has exactly one 'created' event"
+
+      _expected_change = %{
+        "before" => nil,
+        "after" => %{
+          "name" => credential.name,
+          "body" => credential.body |> Jason.encode!() |> Base.encode64()
+        }
+      }
+
+      assert match?(_expected_change, audit_event.changes)
     end
 
     test "create_credential/1 with invalid data returns error changeset" do
@@ -143,7 +154,19 @@ defmodule Lightning.CredentialsTest do
         )
         |> Repo.all()
 
-      assert {"created", %{"after" => nil, "before" => nil}} in audit_events
+      {"created", changes} =
+        Enum.find(audit_events, fn {event, _changes} -> event == "created" end)
+
+      assert match?(
+               %{
+                 "after" => %{
+                   "name" => _name,
+                   "body" => _body
+                 },
+                 "before" => nil
+               },
+               changes
+             )
 
       assert {"updated",
               %{

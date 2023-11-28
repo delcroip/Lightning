@@ -15,6 +15,8 @@ and this project adheres to
 ### Fixed
 - Tooltip text clears later than the background
   [#1094](https://github.com/OpenFn/Lightning/issues/1094)
+- Initial credential creation `changes` show after as `null` rather a value
+  [#1118](https://github.com/OpenFn/Lightning/issues/1118)
 
 ## [v0.10.3] - 2023-11-28
 
