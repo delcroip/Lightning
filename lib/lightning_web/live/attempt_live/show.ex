@@ -20,7 +20,7 @@ defmodule LightningWeb.AttemptLive.Show do
         </LayoutComponents.header>
       </:header>
 
-      <LayoutComponents.centered>
+      <LayoutComponents.centered class="@container/main">
         <.async_result :let={attempt} assign={@attempt}>
           <:loading>
             <.loading_filler />
@@ -29,28 +29,38 @@ defmodule LightningWeb.AttemptLive.Show do
             there was an error loading the attemptanization
           </:failed>
 
-          <div class="flex gap-6">
-            <div class="flex-none">
-              <.attempt_detail attempt={attempt} />
+          <div class="flex gap-6 @5xl/main:flex-row flex-col">
+            <div class="basis-1/3 flex-none flex gap-6 @5xl/main:flex-col flex-row">
+              <.attempt_detail attempt={attempt} class="flex-1 @5xl/main:flex-none" />
 
               <.step_list
                 id={"step-list-#{attempt.id}"}
                 runs={@runs}
                 selected_run_id={@selected_run_id}
+                class="flex-1"
               />
             </div>
-            <div class="flex-grow">
+            <div class="basis-2/3 flex-none flex flex-col gap-4">
               <Common.tab_bar orientation="horizontal" id="1" default_hash="log">
                 <Common.tab_item orientation="horizontal" hash="log">
-                  <Heroicons.clipboard class="h-5 w-5 inline-block mr-2 align-middle" />
+                  <.icon
+                    name="hero-command-line"
+                    class="h-5 w-5 inline-block mr-1 align-middle"
+                  />
                   <span class="inline-block align-middle">Log</span>
                 </Common.tab_item>
                 <Common.tab_item orientation="horizontal" hash="input">
-                  <Heroicons.key class="h-5 w-5 inline-block mr-2" />
+                  <.icon
+                    name="hero-arrow-down-on-square"
+                    class="h-5 w-5 inline-block mr-1 align-middle"
+                  />
                   <span class="inline-block align-middle">Input</span>
                 </Common.tab_item>
                 <Common.tab_item orientation="horizontal" hash="output">
-                  <Heroicons.lock_closed class="h-5 w-5 inline-block mr-2" />
+                  <.icon
+                    name="hero-arrow-up-on-square"
+                    class="h-5 w-5 inline-block mr-1 align-middle"
+                  />
                   <span class="inline-block align-middle">
                     Output
                   </span>
@@ -118,16 +128,6 @@ defmodule LightningWeb.AttemptLive.Show do
   @impl true
   def handle_params(params, _, socket) do
     selected_run_id = Map.get(params, "r")
-
-    # If we have a run_id
-    #   Is the run_id different?
-    #
-    #   Do we have the run?
-    #     Set it as the selected run
-    #
-    # Do we have a selected run?
-    #   Have we loaded the input dataclip for this run?
-    #   Have we loaded the output dataclip for this run?
 
     {:noreply, socket |> apply_selected_run_id(selected_run_id)}
   end
@@ -273,7 +273,6 @@ defmodule LightningWeb.AttemptLive.Show do
            Attempts.get_log_lines(updated_attempt)
            |> Stream.chunk_every(5)
            |> Stream.each(fn lines ->
-             Process.sleep(500)
              send(live_view_pid, {:log_line_chunk, lines})
            end)
            |> Stream.run()
