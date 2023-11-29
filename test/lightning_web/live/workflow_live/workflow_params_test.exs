@@ -75,7 +75,7 @@ defmodule LightningWeb.WorkflowNewLive.WorkflowParamsTest do
                ],
                "jobs" => [
                  %{
-                   "errors" => %{"name" => ["can't be blank"]},
+                   "errors" => %{"name" => ["This field can't be blank"]},
                    "id" => ^job_1_id,
                    "name" => ""
                  },
@@ -144,12 +144,12 @@ defmodule LightningWeb.WorkflowNewLive.WorkflowParamsTest do
                    "adaptor" => "@openfn/language-common@latest",
                    "body" => "",
                    "project_credential_id" => nil,
-                   "errors" => %{"body" => ["can't be blank"]},
+                   "errors" => %{"body" => ["This field can't be blank"]},
                    "name" => "job-3",
                    "id" => ^job_3_id
                  },
                  %{
-                   "errors" => %{"name" => ["can't be blank"]},
+                   "errors" => %{"name" => ["This field can't be blank"]},
                    "id" => ^job_1_id,
                    "project_credential_id" => nil,
                    "name" => ""
@@ -180,7 +180,7 @@ defmodule LightningWeb.WorkflowNewLive.WorkflowParamsTest do
                "edges" => [],
                "jobs" => [
                  %{
-                   "errors" => %{"name" => ["can't be blank"]},
+                   "errors" => %{"name" => ["This field can't be blank"]},
                    "id" => ^job_1_id,
                    "name" => ""
                  },
