@@ -12,6 +12,8 @@ and this project adheres to
 
 - Async loading on the history page to improve UX on long DB queries
   [#1279](https://github.com/OpenFn/Lightning/issues/1279)
+- Add ellipsis for long job names on the canvas
+  [#1217](https://github.com/OpenFn/Lightning/issues/1217)
 
 ### Changed
 
