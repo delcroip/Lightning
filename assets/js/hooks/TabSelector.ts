@@ -1,10 +1,10 @@
 import { PhoenixHook } from './PhoenixHook';
 
 type TabSelector = PhoenixHook<{
-  tabItems: NodeListOf<HTMLElement>;
   contentItems: NodeListOf<HTMLElement>;
   defaultHash: string;
   activeClasses: string[];
+  disabledClasses: string[];
   inactiveClasses: string[];
   _onHashChange(e: Event): void;
   hashChanged(hash: string): void;
@@ -14,11 +14,16 @@ type TabSelector = PhoenixHook<{
 
 export default {
   mounted(this: TabSelector) {
-    this.tabItems = this.el.querySelectorAll('[id^=tab-item]');
     this.contentItems = document.querySelectorAll('[data-panel-hash]');
 
-    const { activeClasses, inactiveClasses, defaultHash } = this.el.dataset;
-    if (!activeClasses || !inactiveClasses || !defaultHash) {
+    const { activeClasses, inactiveClasses, defaultHash, disabledClasses } =
+      this.el.dataset;
+    if (
+      !activeClasses ||
+      !inactiveClasses ||
+      !defaultHash ||
+      !disabledClasses
+    ) {
       throw new Error(
         'TabSelector tab_bar component missing data-active-classes, data-inactive-classes or data-default-hash.'
       );
@@ -36,6 +41,7 @@ export default {
 
     this.activeClasses = activeClasses.split(' ');
     this.inactiveClasses = inactiveClasses.split(' ');
+    this.disabledClasses = disabledClasses?.split(' ');
     this.defaultHash = defaultHash;
 
     window.addEventListener('hashchange', this._onHashChange);
@@ -48,7 +54,7 @@ export default {
     let activePanel: HTMLElement | null = null;
     let inactivePanels: HTMLElement[] = [];
 
-    this.tabItems.forEach(elem => {
+    this.el.querySelectorAll<HTMLElement>('[id^=tab-item]').forEach(elem => {
       const { hash } = elem.dataset;
       const panel = document.querySelector(
         `[data-panel-hash=${hash}]`
@@ -81,6 +87,16 @@ export default {
   },
   applyStyles(activeTab: HTMLElement | null, inactiveTabs: HTMLElement[]) {
     inactiveTabs.forEach(elem => {
+      console.log(elem.dataset);
+      if (elem.hasAttribute('data-disabled')) {
+        console.log(elem);
+
+        elem.classList.remove(...this.activeClasses);
+        elem.classList.remove(...this.inactiveClasses);
+        elem.classList.add(...this.disabledClasses);
+        return;
+      }
+
       elem.classList.remove(...this.activeClasses);
       elem.classList.add(...this.inactiveClasses);
     });

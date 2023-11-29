@@ -12,6 +12,9 @@ defmodule LightningWeb.AttemptLive.Show do
 
   @impl true
   def render(assigns) do
+    assigns =
+      assigns |> assign(:no_run_selected?, is_nil(assigns.selected_run_id))
+
     ~H"""
     <LayoutComponents.page_content>
       <:header>
@@ -49,14 +52,22 @@ defmodule LightningWeb.AttemptLive.Show do
                   />
                   <span class="inline-block align-middle">Log</span>
                 </Common.tab_item>
-                <Common.tab_item orientation="horizontal" hash="input">
+                <Common.tab_item
+                  orientation="horizontal"
+                  hash="input"
+                  disabled={@no_run_selected?}
+                >
                   <.icon
                     name="hero-arrow-down-on-square"
                     class="h-5 w-5 inline-block mr-1 align-middle"
                   />
                   <span class="inline-block align-middle">Input</span>
                 </Common.tab_item>
-                <Common.tab_item orientation="horizontal" hash="output">
+                <Common.tab_item
+                  orientation="horizontal"
+                  hash="output"
+                  disabled={@no_run_selected?}
+                >
                   <.icon
                     name="hero-arrow-up-on-square"
                     class="h-5 w-5 inline-block mr-1 align-middle"
