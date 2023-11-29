@@ -103,6 +103,16 @@ defmodule LightningWeb.WorkflowLive.EditTest do
               op: "add",
               path: "/jobs/0/adaptor",
               value: "@openfn/language-common@latest"
+            },
+            %{
+              op: "add",
+              path: "/errors/jobs",
+              value: [
+                %{
+                  "body" => ["This field can't be blank."],
+                  "name" => ["This field can't be blank."]
+                }
+              ]
             }
           ]
         }
