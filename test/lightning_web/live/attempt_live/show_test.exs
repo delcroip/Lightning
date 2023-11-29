@@ -41,8 +41,8 @@ defmodule LightningWeb.AttemptLive.ShowTest do
     end
 
     test "lifecycle of an attempt", %{conn: conn, project: project} do
-      %{triggers: [%{id: webhook_trigger_id}], jobs: [job]} =
-        insert(:simple_workflow, project: project)
+      %{triggers: [%{id: webhook_trigger_id}], jobs: [job_a, job_b | _rest]} =
+        insert(:complex_workflow, project: project)
 
       # Post to webhook
       assert %{"work_order_id" => wo_id} =
@@ -61,10 +61,7 @@ defmodule LightningWeb.AttemptLive.ShowTest do
              |> render_async() =~ "Pending",
              "has pending state"
 
-      assert view
-             |> element("#attempt-log-#{attempt_id} > :last-child")
-             |> render_async() =~ "Nothing yet...",
-             "has no logs"
+      assert view |> log_is_empty?(attempt)
 
       refute view
              |> has_element?("#step-list-#{attempt_id} > *"),
@@ -94,47 +91,23 @@ defmodule LightningWeb.AttemptLive.ShowTest do
         Lightning.Attempts.start_run(%{
           attempt_id: attempt_id,
           run_id: Ecto.UUID.generate(),
-          job_id: job.id,
+          job_id: job_a.id,
           input_dataclip_id: workorder.dataclip_id
         })
 
-      html =
-        view
-        |> element("#step-list-#{attempt_id} > [data-run-id='#{run.id}']")
-        |> render_async()
+      html = step_list_item(view, attempt, run)
 
-      {:ok, _log_line} =
-        Lightning.Attempts.append_attempt_log(attempt, %{
-          message: ["I'm the worker, I'm working!"],
-          timestamp: DateTime.utc_now()
-        })
-
-      assert html =~ job.name
+      assert html =~ job_a.name
       assert html =~ "Running"
 
-      {:ok, log_line} =
-        Lightning.Attempts.append_attempt_log(attempt, %{
-          run_id: run.id,
-          message: %{message: "hello"},
-          timestamp: DateTime.utc_now()
-        })
+      add_log(attempt, ["I'm the worker, I'm working!"])
 
-      assert view
-             |> element("#attempt-log-#{attempt_id} > *:nth-child(2)")
-             |> render_async() =~
-               "I'm the worker, I'm working!"
-               |> Phoenix.HTML.Safe.to_iodata()
-               |> to_string()
+      {:ok, log_line} = add_log({attempt, run}, %{message: "hello"})
 
-      assert view
-             |> element("#attempt-log-#{attempt_id} > *:nth-child(3)")
-             |> render_async() =~
-               log_line.message |> Phoenix.HTML.Safe.to_iodata() |> to_string()
+      assert view |> has_log_line?("I'm the worker, I'm working!")
+      assert view |> has_log_line?(log_line.message)
 
-      # Select a run
-      view
-      |> element("#step-list-#{attempt_id} a[data-phx-link]", job.name)
-      |> render_click()
+      view |> select_run(attempt, job_a.name)
 
       # Check that the input dataclip is rendered
       assert view
@@ -143,13 +116,7 @@ defmodule LightningWeb.AttemptLive.ShowTest do
              |> Floki.parse_fragment!()
              |> Floki.text() =~ ~s({  "x": 1})
 
-      # Check that the output dataclip isn't available yet.
-      # Ensure that "Nothing yet..." is the _last_ bit of text in the output.
-      assert view
-             |> element("#run-output-#{run.id}")
-             |> render_async()
-             |> Floki.parse_fragment!()
-             |> Floki.text() =~ ~r/Nothing yet\.\.\.\n  $/
+      assert view |> output_is_empty?(run)
 
       # Complete the run
       {:ok, _run} =
@@ -158,15 +125,49 @@ defmodule LightningWeb.AttemptLive.ShowTest do
           project_id: project.id,
           run_id: run.id,
           output_dataclip: ~s({"y": 2}),
+          output_dataclip_id: output_dataclip_id = Ecto.UUID.generate(),
+          reason: "success"
+        })
+
+      assert view |> run_output(run) =~ ~r/{  \"y\": 2}/
+
+      {:ok, run_2} =
+        Lightning.Attempts.start_run(%{
+          attempt_id: attempt_id,
+          run_id: Ecto.UUID.generate(),
+          job_id: job_b.id,
+          input_dataclip_id: output_dataclip_id
+        })
+
+      html = step_list_item(view, attempt, run)
+
+      assert html =~ job_a.name
+      assert html =~ "success"
+
+      html = step_list_item(view, attempt, run_2)
+
+      assert html =~ job_b.name
+      assert html =~ "running"
+
+      view |> select_run(attempt, job_b.name)
+
+      assert view |> output_is_empty?(run_2)
+
+      {:ok, _run} =
+        Lightning.Attempts.complete_run(%{
+          attempt_id: attempt_id,
+          project_id: project.id,
+          run_id: run_2.id,
+          output_dataclip: ~s({"z": 2}),
           output_dataclip_id: Ecto.UUID.generate(),
           reason: "success"
         })
 
-      assert view
-             |> element("#run-output-#{run.id}")
-             |> render_async()
-             |> Floki.parse_fragment!()
-             |> Floki.text() =~ ~r/{  "y": 2}/
+      assert view |> run_output(run_2) =~ ~r/{  \"z\": 2}/
+
+      # Go back to the previous run and check the output gets switched back
+      view |> select_run(attempt, job_a.name)
+      assert view |> run_output(run) =~ ~r/{  \"y\": 2}/
 
       {:ok, _} = Lightning.Attempts.complete_attempt(attempt, %{state: :failed})
 
@@ -174,5 +175,67 @@ defmodule LightningWeb.AttemptLive.ShowTest do
              |> element("#attempt-detail-#{attempt_id}")
              |> render_async() =~ "Failed"
     end
+  end
+
+  defp add_log({attempt, run}, message) do
+    Lightning.Attempts.append_attempt_log(attempt, %{
+      run_id: run.id,
+      message: message,
+      timestamp: DateTime.utc_now()
+    })
+  end
+
+  defp add_log(attempt, message) do
+    Lightning.Attempts.append_attempt_log(attempt, %{
+      message: message,
+      timestamp: DateTime.utc_now()
+    })
+  end
+
+  defp has_log_line?(view, text) do
+    view
+    |> element("[id^='attempt-log-']:not([id$='-nothing-yet'])")
+    |> render_async() =~
+      text
+      |> Phoenix.HTML.Safe.to_iodata()
+      |> to_string()
+  end
+
+  defp step_list_item(view, attempt, run) do
+    view
+    |> element("#step-list-#{attempt.id} > [data-run-id='#{run.id}']")
+    |> render_async()
+  end
+
+  defp select_run(view, attempt, job_name) do
+    view
+    |> element("#step-list-#{attempt.id} a[data-phx-link]", job_name)
+    |> render_click()
+  end
+
+  defp run_output(view, run) do
+    assert view
+           |> element("#run-output-#{run.id}")
+           |> render_async()
+           |> Floki.parse_fragment!()
+           |> Floki.text()
+  end
+
+  defp output_is_empty?(view, run) do
+    view
+    |> element("#run-output-#{run.id}")
+    |> render_async()
+    |> Floki.parse_fragment!()
+    |> Floki.text() =~
+      ~r/^[\n\s]+Nothing yet\.\.\.[\n\s]+$/
+  end
+
+  defp log_is_empty?(view, attempt) do
+    view
+    |> element("#attempt-log-#{attempt.id}")
+    |> render_async()
+    |> Floki.parse_fragment!()
+    |> Floki.text() =~
+      ~r/^[\n\s]+Nothing yet\.\.\.[\n\s]+$/
   end
 end

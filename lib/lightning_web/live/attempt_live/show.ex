@@ -142,10 +142,22 @@ defmodule LightningWeb.AttemptLive.Show do
           input_dataclip: false,
           output_dataclip: false
         )
+        |> stream(:input_dataclip, [], reset: true)
+        |> stream(:output_dataclip, [], reset: true)
 
       _ ->
         socket
         |> assign(:selected_run_id, id)
+        |> then(fn socket ->
+          if socket |> changed?(:selected_run_id) do
+            socket
+            |> assign(input_dataclip: false, output_dataclip: false)
+            |> stream(:input_dataclip, [], reset: true)
+            |> stream(:output_dataclip, [], reset: true)
+          else
+            socket
+          end
+        end)
         |> maybe_set_selected_run()
     end
   end
@@ -407,7 +419,8 @@ defmodule LightningWeb.AttemptLive.Show do
 
     case Enum.find_index(runs, &(&1.id == run.id)) do
       nil ->
-        socket |> assign(runs: [run | runs])
+        runs = [run | runs] |> Enum.sort_by(& &1.started_at)
+        socket |> assign(runs: runs)
 
       index ->
         socket |> assign(runs: List.replace_at(runs, index, run))

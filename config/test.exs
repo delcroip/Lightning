@@ -62,7 +62,7 @@ config :lightning,
   adaptor_icons_path: "test/fixtures/adaptors/icons"
 
 # Print only warnings and errors during test
-config :logger, level: :debug
+config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

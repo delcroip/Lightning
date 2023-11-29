@@ -2,8 +2,6 @@ defmodule LightningWeb.RunLive.Components do
   @moduledoc false
   use LightningWeb, :component
 
-  import LightningWeb.RouteHelpers
-
   alias Lightning.Invocation
   alias Lightning.WorkOrders.SearchParams
 

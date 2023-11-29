@@ -140,33 +140,35 @@ defmodule LightningWeb.AttemptLive.Components do
   attr :class, :string, default: "h-4 w-4"
 
   def run_state_icon(%{run: run} = assigns) do
+    assigns = assign(assigns, title: run.exit_reason)
+
     case {run.exit_reason, run.error_type} do
       {"success", _} ->
-        ~H[<.icon name="hero-check-circle" class={@class} />]
+        ~H[<.icon title={@title} name="hero-check-circle" class={@class} />]
 
       {"fail", _} ->
-        ~H[<.icon name="hero-x-circle" class={@class} />]
+        ~H[<.icon title={@title} name="hero-x-circle" class={@class} />]
 
       {"crash", _} ->
-        ~H[<.icon name="hero-x-circle" class={@class} />]
+        ~H[<.icon title={@title} name="hero-x-circle" class={@class} />]
 
       {"cancel", _} ->
-        ~H[<.icon name="hero-check-circle" class={@class} />]
+        ~H[<.icon title={@title} name="hero-check-circle" class={@class} />]
 
       {"kill", error_type} when error_type in ["SecurityError", "ImportError"] ->
-        ~H[<.icon name="hero-shield-exclamation" class={@class} />]
+        ~H[<.icon title={@title} name="hero-shield-exclamation" class={@class} />]
 
       {"kill", _} ->
-        ~H[<.icon name="hero-exclamation-circle" class={@class} />]
+        ~H[<.icon title={@title} name="hero-exclamation-circle" class={@class} />]
 
       {"exception", _} ->
-        ~H[<.icon name="hero-exclamation-triangle" class={@class} />]
+        ~H[<.icon title={@title} name="hero-exclamation-triangle" class={@class} />]
 
       {"lost", _} ->
-        ~H[<.icon name="hero-exclamation-triangle" class={@class} />]
+        ~H[<.icon title={@title} name="hero-exclamation-triangle" class={@class} />]
 
       _ ->
-        ~H[<.icon name="hero-ellipsis-horizontal" class={@class} />]
+        ~H[<.icon title="running" name="hero-ellipsis-horizontal" class={@class} />]
     end
   end
 end
